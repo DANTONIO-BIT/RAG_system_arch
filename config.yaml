@@ -5,15 +5,31 @@
 # Mueve la carpeta libremente y ejecuta: python3 setup.py
 #
 # knowledge_base/ está embebido dentro de este mismo repo:
-#   knowledge_base/src/          ← motor RAG
-#   knowledge_base/config/       ← topics.yaml
+#   knowledge_base/src/            ← motor RAG
+#   knowledge_base/config/         ← topics.yaml
 #   knowledge_base/data/chroma_db/ ← índice vectorial (generado, gitignored)
-#   knowledge_base/input/        ← tus PDFs y documentos (Git LFS)
+#   knowledge_base/input/          ← tus PDFs y documentos (gitignored, en disco de respaldo)
 
 embedding:
   model: bge-m3
   base_url: http://localhost:11434
   dimensions: 1024
+  batch_size: 32
+
+chunking:
+  size: 1500
+  overlap: 200
+
+chroma:
+  # Path relativo a AGENT_ROOT — nunca hardcodear absolutos
+  persist_directory: knowledge_base/data/chroma_db
+  collections:
+    public: public       # papers, references, ngs results, projects/*/inbox
+    private: private     # hypotheses, notes, synthesis, projects/*/private
+
+routing:
+  confidence_high: 0.85  # >= este → responde solo con RAG, sin LLM
+  confidence_low:  0.50  # <  este → escala a cloud (solo contexto público)
 
 llm:
   local:
@@ -24,24 +40,34 @@ llm:
   cloud:
     model: deepseek/deepseek-r1-0528:free
     base_url: https://openrouter.ai/api/v1
+    temperature: 0.3
+    require_confirm_if_private: true
 
-routing:
-  confidence_high: 0.85
-  confidence_low:  0.50
+data:
+  watch_dirs:
+    public:  data/public
+    private: data/private
+    ngs:     data/ngs
+  inbox_dir:   data/public/papers/inbox
+  indexed_dir: data/public/papers/indexed
+  supported_extensions:
+    standard: [.pdf, .docx, .txt, .md, .csv, .xlsx, .json, .html]
+    omics:    [.fasta, .fa, .vcf, .bed, .wig, .tsv, .gtf, .gff]
 
 wiki:
+  output_dir: wiki/auto
   quality_threshold: 0.80
+  max_node_length: 2000
   session_preload_nodes: 4
 
 context:
   max_budget_tokens: 3000
   wiki_first: true
 
-data:
-  supported_extensions:
-    standard: [.pdf, .docx, .txt, .md, .csv, .xlsx, .json, .html]
-    omics:    [.fasta, .fa, .vcf, .bed, .wig, .tsv, .gtf, .gff]
-
 engram:
   project: research-agent
   bin: /usr/local/bin/engram
+
+logs:
+  dir: logs
+  level: INFO

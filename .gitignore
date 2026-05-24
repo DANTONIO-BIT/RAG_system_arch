@@ -1,7 +1,9 @@
 # Private / sensitive — NEVER commit
 data/private/
+projects/*/private/
 
 # Generated state — rebuild with setup.py --rebuild
+data/public/papers/indexed/
 data/public/indexed/
 
 # Runtime
