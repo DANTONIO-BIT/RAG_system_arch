@@ -12,8 +12,8 @@ Detects macOS / Windows / Linux automatically.
     python3 setup.py --rebuild
 
 What it does:
-  1. Auto-detects knowledge_base (sibling folder) — or asks for path
-  2. Updates config.yaml with the correct absolute paths
+  1. Creates embedded knowledge_base/ structure and data/ folders
+  2. Updates config.yaml (engram binary path)
   3. Installs Python dependencies (pip)
   4. Registers the MCP server globally in Claude Code
   5. Installs OS auto-start for the file watchdog:
@@ -21,7 +21,7 @@ What it does:
        Windows → Task Scheduler (schtasks)
        Linux   → prints crontab command
   --rebuild also:
-  6. Re-ingests all PDFs/docx/etc from knowledge_base/input/ into a fresh ChromaDB
+  6. Re-ingests all files from knowledge_base/input/ into a fresh ChromaDB
 """
 from __future__ import annotations
 
@@ -135,8 +135,24 @@ def step_mcp() -> None:
 def step_autostart() -> None:
     _h("4. Watchdog — auto-arranque al login")
 
-    (AGENT_ROOT / "logs").mkdir(parents=True, exist_ok=True)
-    (AGENT_ROOT / "data" / "public" / "inbox").mkdir(parents=True, exist_ok=True)
+    # Create full data structure
+    for d in [
+        AGENT_ROOT / "logs",
+        AGENT_ROOT / "data" / "public" / "papers" / "inbox",
+        AGENT_ROOT / "data" / "public" / "papers" / "indexed",
+        AGENT_ROOT / "data" / "public" / "references",
+        AGENT_ROOT / "data" / "public" / "shared",
+        AGENT_ROOT / "data" / "private" / "hypotheses",
+        AGENT_ROOT / "data" / "private" / "notes",
+        AGENT_ROOT / "data" / "private" / "synthesis",
+        AGENT_ROOT / "data" / "ngs" / "reports",
+        AGENT_ROOT / "data" / "ngs" / "results",
+        AGENT_ROOT / "data" / "ngs" / "sequences",
+        AGENT_ROOT / "projects" / "_template" / "inbox",
+        AGENT_ROOT / "projects" / "_template" / "private",
+        AGENT_ROOT / "projects" / "_template" / "pipelines",
+    ]:
+        d.mkdir(parents=True, exist_ok=True)
 
     if IS_MAC:
         _autostart_launchagent()
@@ -295,20 +311,22 @@ def step_rebuild(kb: Path) -> None:
     print(f"\nRebuild completado: {ok} OK, {err} errores.")
     if err:
         print("Revisa los errores arriba. Los archivos omitidos se pueden re-intentar")
-        print("copiándolos al inbox: data/public/inbox/")
+        print("copiándolos al inbox: data/public/papers/inbox/")
 
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
 def _print_summary() -> None:
-    inbox = AGENT_ROOT / "data" / "public" / "inbox"
-    log   = AGENT_ROOT / "logs" / "watcher.log"
+    log = AGENT_ROOT / "logs" / "watcher.log"
     print("\n" + "═" * 60)
     print("Setup completado.")
     print("═" * 60)
-    print(f"\nDrop files aquí para vectorizar automáticamente:")
-    print(f"  {inbox}")
-    print(f"\nFormatos: pdf, docx, xlsx, txt, md, csv, fasta, vcf, bed, wig...")
+    print("\nDrop files aquí para vectorizar automáticamente:")
+    print(f"  Papers públicos  →  data/public/papers/inbox/")
+    print(f"  Notas privadas   →  data/private/notes/  (nunca sale del local)")
+    print(f"  Resultados NGS   →  data/ngs/reports/")
+    print(f"  Proyecto nuevo   →  cp -r projects/_template projects/<nombre>/")
+    print(f"\nFormatos: pdf, docx, xlsx, txt, md, csv, fasta, vcf, bed, html…")
     print(f"Logs watchdog: {log}")
     print(f"\nMCP tools en Claude Code (cualquier directorio):")
     print("  search_memory · save_insight · save_feedback · call_cloud")
