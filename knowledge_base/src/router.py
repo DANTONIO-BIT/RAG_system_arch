@@ -20,7 +20,10 @@ from pathlib import Path
 
 import httpx
 
-from .query import query_full, compute_confidence, format_context
+try:
+    from .query import query_full, compute_confidence, format_context
+except ImportError:
+    from query import query_full, compute_confidence, format_context
 
 logger = logging.getLogger(__name__)
 
