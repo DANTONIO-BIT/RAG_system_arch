@@ -197,9 +197,9 @@ def ingest_file(path: Path, topic: str | None = None, move_to_indexed: bool = Tr
     if not chunks:
         return f"EMPTY     {path.name}: no chunks produced"
 
-    # Idempotent chunk IDs (SHA256 of path + index)
-    doc_hash = hashlib.sha256(str(path).encode()).hexdigest()[:16]
-    uid_exists = False
+    # Idempotent chunk IDs — normalize inbox→indexed so moving a file
+    # doesn't create duplicate chunks in ChromaDB.
+    _norm_path = str(path).replace("/inbox/", "/indexed/")
     try:
         client = chromadb.PersistentClient(path=str(KB_CHROMA))
         col    = client.get_or_create_collection(
@@ -207,7 +207,7 @@ def ingest_file(path: Path, topic: str | None = None, move_to_indexed: bool = Tr
             metadata={"hnsw:space": "cosine"},
         )
         # Check if first chunk already exists → skip
-        test_id = hashlib.sha256(f"{path}::0".encode()).hexdigest()[:32]
+        test_id = hashlib.sha256(f"{_norm_path}::0".encode()).hexdigest()[:32]
         existing = col.get(ids=[test_id])
         if existing["ids"]:
             return f"SKIP      {path.name}: already indexed in '{collection}'"
@@ -222,7 +222,7 @@ def ingest_file(path: Path, topic: str | None = None, move_to_indexed: bool = Tr
     ids:       list[str] = []
     metas:     list[dict] = []
     for i, chunk in enumerate(chunks):
-        uid  = hashlib.sha256(f"{path}::{i}".encode()).hexdigest()[:32]
+        uid  = hashlib.sha256(f"{_norm_path}::{i}".encode()).hexdigest()[:32]
         meta = _build_metadata(path, collection, i, topic)
         ids.append(uid)
         metas.append(meta)
