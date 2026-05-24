@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/qwen3:8b",
+  "mcp": {
+    "research-agent": {
+      "type": "local",
+      "command": ["python3", "/Users/diego/Desktop/Proyectos_ongoing/Agents_conf/research-agent/agent/mcp_server.py"],
+      "enabled": true
+    }
+  }
+}

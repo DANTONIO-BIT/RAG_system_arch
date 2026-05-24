@@ -1,0 +1,21 @@
+# Private / sensitive — NEVER commit
+data/private/
+
+# Generated state — rebuild with setup.py --rebuild
+data/public/indexed/
+
+# Runtime
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment / secrets
+.env
+*.key
+
+# macOS
+.DS_Store

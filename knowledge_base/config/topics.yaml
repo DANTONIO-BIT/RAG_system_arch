@@ -1,0 +1,154 @@
+topics:
+  TRANSF.DIGITAL:
+    collection: transf_digital
+    category: transformacion_digital
+    display_name: Transformación Digital
+    description: Documentos del curso de transformación digital de Digital Lab
+    keywords:
+      - transformación digital
+      - pyme
+      - competencias gestión
+      - modelo negocio
+      - gestión cambio
+      - cultura organizacional
+      - plan transformación
+      - business intelligence
+      - herramientas digitales
+      - experiencia cliente
+      - marketing 360
+      - posventa
+      - metodologías ágiles
+      - creatividad
+      - diseño
+      - innovación
+
+  Nexus_IA_Big_Data_turism:
+    collection: nexus_ia_bigdata
+    category: ia_bigdata
+    display_name: IA y Big Data
+    description: Documentos de Nexus sobre Inteligencia Artificial y Big Data
+    keywords:
+      - big data
+      - inteligencia artificial
+      - ia
+      - machine learning
+      - analytics
+      - business intelligence
+      - datos
+      - análisis datos
+      - turismo resiliente
+      - huella carbono
+      - caso práctico
+
+  Emprendimiento:
+    collection: emprendimiento
+    category: emprendimiento
+    display_name: Emprendimiento
+    description: Documentos sobre emprendimiento y modelos de negocio
+    keywords:
+      - plan negocio
+      - modelo canvas
+      - segmentación cliente
+      - autónomo
+      - pluriactividad
+      - dafo
+      - came
+      - negocio digital
+
+  web_developement:
+    collection: web_development
+    category: desarrollo_web
+    display_name: Desarrollo Web
+    description: Documentos sobre desarrollo web y tecnologías frontend
+    keywords:
+      - web
+      - desarrollo web
+      - frontend
+      - javascript
+      - gsap
+      - animation
+      - ui
+      - ux
+
+  Agente_inmobiliario:
+    collection: agente_inmobiliario
+    category: inmobiliario
+    display_name: Agente Inmobiliario
+    description: Economía, inversión inmobiliaria, mercado de capitales y legislación chilena
+    keywords:
+      - inmobiliario
+      - inversión
+      - mercado de capitales
+      - fondo de inversión
+      - banchile
+      - economía empresa
+      - sector inmobiliario
+      - entorno macro
+      - macro financiero
+      - formalizar empresa
+      - ley 3918
+      - emprendimiento chile
+      - sociedad anónima
+      - capitalización
+
+query_keywords:
+  transformacion_digital:
+    - transformación
+    - digital
+    - pyme
+    - gestión cambio
+    - cultura
+    - competencias
+    - modelo negocio
+    - metodología ágil
+    - creatividad
+    - innovación
+    - experiencia cliente
+    - marketing
+
+  ia_bigdata:
+    - big data
+    - inteligencia artificial
+    - ia
+    - machine learning
+    - analytics
+    - análisis datos
+    - datos
+
+  emprendimiento:
+    - emprendimiento
+    - emprendedor
+    - plan negocio
+    - canvas
+    - modelo negocio
+    - startup
+    - autónomo
+    - dafo
+    - came
+    - segmentación
+
+  desarrollo_web:
+    - web
+    - desarrollo
+    - frontend
+    - javascript
+    - gsap
+    - react
+    - css
+    - animation
+    - ui
+
+  inmobiliario:
+    - inmobiliario
+    - inversión
+    - mercado capitales
+    - fondo inversión
+    - banchile
+    - economía empresa
+    - sector inmobiliario
+    - entorno macro
+    - ley 3918
+    - formalizar
+    - sociedad
+    - capitalización
+    - financiero
