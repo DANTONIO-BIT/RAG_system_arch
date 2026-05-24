@@ -45,7 +45,7 @@ The git repo only contains code, the RAG engine, and topic config.
 Drop a file into the inbox — it's auto-ingested within seconds:
 
 ```bash
-cp paper.pdf data/public/inbox/
+cp paper.pdf data/public/papers/inbox/
 ```
 
 Or use Claude Code — MCP tools are always available:
@@ -63,7 +63,7 @@ Or use Claude Code — MCP tools are always available:
 
 ## Moving the folder
 
-Move `research-agent/` and `knowledge_base/` anywhere together, then re-run setup:
+This repo is fully self-contained. Move it anywhere and re-run setup:
 
 ```bash
 python3 setup.py   # updates config.yaml paths + re-registers MCP
@@ -74,21 +74,26 @@ python3 setup.py   # updates config.yaml paths + re-registers MCP
 ## Repository structure
 
 ```
-research-agent/          ← this repo
-  agent/                 ← MCP server, harness, tools, context builder
-  infra/ingest/          ← parsers, watcher, run_ingest
-  wiki/auto/             ← auto-generated knowledge nodes (gitignored)
-  wiki/manual/           ← your own notes (commit these if you want)
-  data/public/inbox/     ← drop files here for auto-ingest
-  data/private/          ← private notes (gitignored, never sent to cloud)
-  config.yaml            ← all settings
-  setup.py               ← cross-platform setup + rebuild
-
-knowledge_base/          ← sibling folder (tracked separately or together)
-  input/                 ← source PDFs and documents (Git LFS)
-  data/chroma_db/        ← generated binary index (gitignored, rebuilt with --rebuild)
-  src/                   ← RAG engine (vector store, embeddings, router)
-  config/topics.yaml     ← topic → collection mapping
+research-agent/                     ← this repo (self-contained)
+  agent/                            ← MCP server, harness, tools, context builder
+  infra/ingest/                     ← parsers, watcher, run_ingest
+  knowledge_base/
+    src/                            ← RAG engine (embeddings, query, router)
+    config/topics.yaml              ← topic → collection mapping
+    input/                          ← your PDFs/docs (gitignored — keep on backup drive)
+    data/chroma_db/                 ← vector index (gitignored — rebuilt with --rebuild)
+  data/
+    public/papers/inbox/            ← drop files here for auto-ingest
+    public/papers/indexed/          ← processed files (gitignored)
+    public/references/              ← reference documents
+    private/                        ← private notes (gitignored, never sent to cloud)
+    ngs/                            ← NGS processed outputs
+  projects/                         ← per-project workspaces
+    _template/inbox|private|pipelines/
+  wiki/auto/                        ← auto-generated knowledge nodes
+  wiki/manual/                      ← your curated notes (commit these)
+  config.yaml                       ← all settings
+  setup.py                          ← cross-platform setup + rebuild
 ```
 
 ---
@@ -103,7 +108,7 @@ knowledge_base/          ← sibling folder (tracked separately or together)
 
 ## Sharing this tool
 
-1. Push `research-agent/` to GitHub (code only — no PDFs, no ChromaDB)
+1. Push this repo to GitHub (code only — no PDFs, no ChromaDB, no private notes)
 2. Recipient clones, copies their own documents into `knowledge_base/input/`, then runs `python3 setup.py --rebuild`
 3. They need Ollama with the same models: `ollama pull bge-m3 && ollama pull qwen3:8b`
 
