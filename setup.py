@@ -43,13 +43,24 @@ OS          = platform.system()      # "Darwin" | "Windows" | "Linux"
 IS_WIN      = OS == "Windows"
 IS_MAC      = OS == "Darwin"
 
+VENV_DIR    = AGENT_ROOT / ".venv"
+
 TASK_NAME   = "ResearchAgentWatcher"
 LAUNCH_LABEL = "com.research-agent.watcher"
 
+# chromadb is PINNED to 1.5.0: newer 1.5.x segfault on HNSW vector queries
+# under macOS/ARM64 (Apple Silicon). See requirements.txt for details.
 PACKAGES = [
     "watchdog", "pypdf", "python-docx", "openpyxl",
-    "httpx", "pyyaml", "chromadb", "ollama", "mcp",
+    "httpx", "pyyaml", "chromadb==1.5.0", "ollama", "mcp",
 ]
+
+
+def _venv_python() -> Path:
+    """Path to the interpreter inside the isolated .venv."""
+    if IS_WIN:
+        return VENV_DIR / "Scripts" / "python.exe"
+    return VENV_DIR / "bin" / "python"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -86,28 +97,62 @@ def step_knowledge_base() -> Path:
     return kb
 
 
+# ── Step 1.5 — isolated venv ──────────────────────────────────────────────────
+
+def step_venv() -> str:
+    """
+    Create an isolated .venv and return the path to its interpreter.
+
+    Isolation matters: installing chromadb 1.5.0 globally would clash with other
+    projects (and --break-system-packages pollutes the system Python). The venv
+    keeps this tool's pinned stack independent.
+
+    On macOS, the venv is built with Python 3.9 from CommandLineTools when
+    available — the interpreter proven stable with chromadb 1.5.0 on Apple
+    Silicon. Falls back to the Python running setup.py otherwise.
+    """
+    _h("1.5 Entorno virtual aislado (.venv)")
+
+    vpy = _venv_python()
+    if vpy.exists():
+        print(f"venv ya existe: {VENV_DIR}")
+        return str(vpy)
+
+    base_python = PYTHON
+    if IS_MAC:
+        cltools = Path("/Library/Developer/CommandLineTools/usr/bin/python3.9")
+        if cltools.exists():
+            base_python = str(cltools)
+
+    result = _run([base_python, "-m", "venv", str(VENV_DIR)])
+    if result.returncode != 0 or not vpy.exists():
+        print(f"WARN: no se pudo crear venv: {result.stderr[:300]}")
+        print("Continuando con el Python actual (sin aislamiento).")
+        return PYTHON
+
+    print(f"venv creado: {VENV_DIR}")
+    print(f"   base: {base_python}")
+    # Upgrade pip quietly inside the venv
+    _run([str(vpy), "-m", "pip", "install", "--upgrade", "pip", "-q"])
+    return str(vpy)
+
+
 # ── Step 2 — pip packages ─────────────────────────────────────────────────────
 
-def step_pip() -> None:
-    _h("2. Dependencias Python")
+def step_pip(py: str) -> None:
+    _h("2. Dependencias Python (en venv)")
 
-    # Try with --break-system-packages first (needed on macOS Homebrew Python)
-    result = _run([PYTHON, "-m", "pip", "install", *PACKAGES,
-                   "--break-system-packages", "-q"])
-    if result.returncode != 0:
-        # Fallback without flag (works on Windows / venv)
-        result = _run([PYTHON, "-m", "pip", "install", *PACKAGES, "-q"])
-
+    result = _run([py, "-m", "pip", "install", *PACKAGES, "-q"])
     if result.returncode == 0:
-        print("OK — todos los paquetes instalados.")
+        print("OK — todos los paquetes instalados en el venv.")
     else:
         print(f"WARN: pip reportó errores:\n{result.stderr[:400]}")
-        print("Intenta manualmente: pip install -r requirements.txt")
+        print("Intenta manualmente: .venv/bin/pip install -r requirements.txt")
 
 
 # ── Step 3 — Claude Code MCP registration ────────────────────────────────────
 
-def step_mcp() -> None:
+def step_mcp(py: str) -> None:
     _h("3. MCP Server (Claude Code)")
 
     # claude CLI might be claude / claude.cmd / claude.exe
@@ -116,13 +161,13 @@ def step_mcp() -> None:
         mcp_py = AGENT_ROOT / "agent" / "mcp_server.py"
         print("AVISO: 'claude' no encontrado en PATH.")
         print("Registra manualmente después de instalar Claude Code:")
-        print(f'  claude mcp add --scope user research-agent "{PYTHON}" "{mcp_py}"')
+        print(f'  claude mcp add --scope user research-agent "{py}" "{mcp_py}"')
         return
 
     mcp_py = str(AGENT_ROOT / "agent" / "mcp_server.py")
     _run([claude, "mcp", "remove", "research-agent", "--scope", "user"])
     result = _run([claude, "mcp", "add", "--scope", "user",
-                   "research-agent", PYTHON, mcp_py])
+                   "research-agent", py, mcp_py])
     if result.returncode == 0:
         print("research-agent registrado en Claude Code (scope: user).")
         print("Disponible desde cualquier directorio.")
@@ -132,7 +177,7 @@ def step_mcp() -> None:
 
 # ── Step 4 — auto-start watchdog ─────────────────────────────────────────────
 
-def step_autostart() -> None:
+def step_autostart(py: str) -> None:
     _h("4. Watchdog — auto-arranque al login")
 
     # Create full data structure
@@ -155,16 +200,16 @@ def step_autostart() -> None:
         d.mkdir(parents=True, exist_ok=True)
 
     if IS_MAC:
-        _autostart_launchagent()
+        _autostart_launchagent(py)
     elif IS_WIN:
-        _autostart_task_scheduler()
+        _autostart_task_scheduler(py)
     else:
         watcher = AGENT_ROOT / "infra" / "ingest" / "watcher.py"
         print("Linux — agrega esto al crontab (crontab -e):")
-        print(f"  @reboot {PYTHON} {watcher} >> {AGENT_ROOT}/logs/watcher.log 2>&1")
+        print(f"  @reboot {py} {watcher} >> {AGENT_ROOT}/logs/watcher.log 2>&1")
 
 
-def _autostart_launchagent() -> None:
+def _autostart_launchagent(py: str) -> None:
     """macOS — LaunchAgent plist."""
     plist_dir = Path.home() / "Library" / "LaunchAgents"
     plist_dir.mkdir(parents=True, exist_ok=True)
@@ -180,7 +225,7 @@ def _autostart_launchagent() -> None:
   <key>Label</key><string>{LAUNCH_LABEL}</string>
   <key>ProgramArguments</key>
   <array>
-    <string>{PYTHON}</string>
+    <string>{py}</string>
     <string>{watcher}</string>
   </array>
   <key>RunAtLoad</key><true/>
@@ -198,7 +243,7 @@ def _autostart_launchagent() -> None:
     print("Arranca automáticamente al iniciar sesión. KeepAlive=true (se reinicia si cae).")
 
 
-def _autostart_task_scheduler() -> None:
+def _autostart_task_scheduler(py: str) -> None:
     """Windows — Task Scheduler via schtasks + XML."""
     watcher = AGENT_ROOT / "infra" / "ingest" / "watcher.py"
     log     = AGENT_ROOT / "logs" / "watcher.log"
@@ -220,7 +265,7 @@ def _autostart_task_scheduler() -> None:
   </Principals>
   <Actions Context="Author">
     <Exec>
-      <Command>{PYTHON}</Command>
+      <Command>{py}</Command>
       <Arguments>"{watcher}"</Arguments>
       <WorkingDirectory>{AGENT_ROOT}</WorkingDirectory>
     </Exec>
@@ -274,7 +319,7 @@ def _print_windows_manual(watcher: Path, log: Path) -> None:
 
 # ── Step 5 — rebuild ChromaDB from source files ───────────────────────────────
 
-def step_rebuild(kb: Path) -> None:
+def step_rebuild(kb: Path, py: str) -> None:
     _h("5. Rebuild ChromaDB from source files")
 
     input_dir = kb / "input"
@@ -299,7 +344,7 @@ def step_rebuild(kb: Path) -> None:
     run_ingest = AGENT_ROOT / "infra" / "ingest" / "run_ingest.py"
     ok = err = 0
     for fp in sorted(files):
-        result = _run([PYTHON, str(run_ingest), str(fp), "--no-move"])
+        result = _run([py, str(run_ingest), str(fp), "--no-move"])
         if result.returncode == 0:
             ok += 1
             print(f"  ✓ {fp.name}")
@@ -357,12 +402,13 @@ def main() -> None:
     print(f"Python: {PYTHON} ({platform.python_version()})")
 
     kb = step_knowledge_base()
-    step_pip()
-    step_mcp()
-    step_autostart()
+    py = step_venv()
+    step_pip(py)
+    step_mcp(py)
+    step_autostart(py)
 
     if args.rebuild:
-        step_rebuild(kb)
+        step_rebuild(kb, py)
 
     _print_summary()
 

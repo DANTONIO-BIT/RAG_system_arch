@@ -5,6 +5,11 @@ projects/*/private/
 # Generated state — rebuild with setup.py --rebuild
 data/public/papers/indexed/
 data/public/indexed/
+knowledge_base/data/chroma_db/
+knowledge_base/data/chroma/
+
+# Source documents — keep on your backup drive, never in git
+knowledge_base/input/
 
 # Runtime
 logs/
@@ -14,6 +19,10 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Isolated virtualenv created by setup.py (rebuilt on each machine)
+.venv/
+venv/
 
 # Environment / secrets
 .env

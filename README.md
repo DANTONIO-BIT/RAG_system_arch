@@ -10,9 +10,16 @@ Local-first research and study assistant. Runs entirely on your machine (Ollama 
 
 ## Requirements
 
-- Python 3.10+
+- **macOS (Apple Silicon):** Python 3.9 from CommandLineTools (`xcode-select --install`).
+  `setup.py` builds the isolated `.venv` with it automatically — it is the
+  interpreter proven stable with the pinned `chromadb==1.5.0`. Newer ChromaDB
+  (1.5.8+) segfaults on vector queries under ARM64.
+- **Windows / Linux:** Python 3.10+ is fine.
 - [Ollama](https://ollama.ai) running locally with `bge-m3` and `qwen3:8b` pulled
 - [Claude Code](https://claude.ai/code) CLI (for MCP registration)
+
+> `setup.py` creates an isolated `.venv` and installs all dependencies there —
+> it never touches your global/system Python, so it can't clash with other tools.
 
 ---
 

@@ -1,9 +1,15 @@
+# Install into the isolated .venv created by setup.py — NOT global Python.
+# On macOS, setup.py builds the venv with Python 3.9 (CommandLineTools), the
+# combination proven stable on Apple Silicon.
 watchdog>=4.0.0
 pypdf>=4.0.0
 python-docx>=1.1.0
 openpyxl>=3.1.0
 httpx>=0.27.0
 pyyaml>=6.0
-chromadb>=0.5.0
+# PINNED to 1.5.0: newer 1.5.x (e.g. 1.5.8) segfault on HNSW vector queries
+# under macOS/ARM64 (Apple Silicon). Ingest works but query crashes. Do NOT
+# loosen this pin without testing QUERY (not just ingest) on the target machine.
+chromadb==1.5.0
 ollama>=0.3.0
 mcp>=1.0.0
