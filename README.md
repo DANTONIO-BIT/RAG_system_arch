@@ -10,16 +10,21 @@ Local-first research and study assistant. Runs entirely on your machine (Ollama 
 
 ## Requirements
 
-- **macOS (Apple Silicon):** Python 3.9 from CommandLineTools (`xcode-select --install`).
-  `setup.py` builds the isolated `.venv` with it automatically — it is the
-  interpreter proven stable with the pinned `chromadb==1.5.0`. Newer ChromaDB
-  (1.5.8+) segfaults on vector queries under ARM64.
-- **Windows / Linux:** Python 3.10+ is fine.
+- **Python 3.10+** (required — the `mcp` package needs >=3.10). On macOS,
+  `setup.py` builds the isolated `.venv` with a Homebrew `python3.10/3.11/3.12`.
+- **Apple Silicon note:** `chromadb` is pinned to `1.5.0`. Newer 1.5.x (1.5.8+)
+  segfault on vector queries under ARM64; 1.5.0 + Python 3.10 is verified stable.
 - [Ollama](https://ollama.ai) running locally with `bge-m3` and `qwen3:8b` pulled
 - [Claude Code](https://claude.ai/code) CLI (for MCP registration)
 
 > `setup.py` creates an isolated `.venv` and installs all dependencies there —
 > it never touches your global/system Python, so it can't clash with other tools.
+
+> **macOS — Full Disk Access:** if you run this from `~/Desktop`, `~/Documents`
+> or `~/Downloads`, the auto-start LaunchAgent is blocked by macOS privacy (TCC)
+> and fails with `EX_CONFIG`. Either keep the folder outside those locations
+> (e.g. `~/research-agent`) or grant Full Disk Access to the `.venv` python in
+> System Settings → Privacy & Security → Full Disk Access.
 
 ---
 

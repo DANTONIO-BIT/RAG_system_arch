@@ -62,6 +62,27 @@ def _venv_python() -> Path:
         return VENV_DIR / "Scripts" / "python.exe"
     return VENV_DIR / "bin" / "python"
 
+
+def _pick_base_python() -> str:
+    """
+    Choose the interpreter to build the venv with. Needs >=3.10 (mcp requires it;
+    chromadb 1.5.0 runs fine on 3.10/ARM64). On macOS prefer a Homebrew
+    python3.12/3.11/3.10; otherwise use the interpreter running setup.py if it is
+    >=3.10, else whatever python3.1x is on PATH.
+    """
+    if IS_MAC:
+        for name in ("python3.12", "python3.11", "python3.10"):
+            found = shutil.which(name)
+            if found:
+                return found
+    if sys.version_info >= (3, 10):
+        return PYTHON
+    for name in ("python3.12", "python3.11", "python3.10"):
+        found = shutil.which(name)
+        if found:
+            return found
+    return PYTHON
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _h(title: str) -> None:
@@ -107,9 +128,10 @@ def step_venv() -> str:
     projects (and --break-system-packages pollutes the system Python). The venv
     keeps this tool's pinned stack independent.
 
-    On macOS, the venv is built with Python 3.9 from CommandLineTools when
-    available — the interpreter proven stable with chromadb 1.5.0 on Apple
-    Silicon. Falls back to the Python running setup.py otherwise.
+    Python 3.10+ is required: the `mcp` package needs >=3.10, and chromadb 1.5.0
+    is verified stable on 3.10 under Apple Silicon (the segfault was a chromadb
+    1.5.8 regression, not a Python-version issue). On macOS we prefer a Homebrew
+    python3.10/3.11/3.12; on Win/Linux the launching interpreter is used.
     """
     _h("1.5 Entorno virtual aislado (.venv)")
 
@@ -118,11 +140,7 @@ def step_venv() -> str:
         print(f"venv ya existe: {VENV_DIR}")
         return str(vpy)
 
-    base_python = PYTHON
-    if IS_MAC:
-        cltools = Path("/Library/Developer/CommandLineTools/usr/bin/python3.9")
-        if cltools.exists():
-            base_python = str(cltools)
+    base_python = _pick_base_python()
 
     result = _run([base_python, "-m", "venv", str(VENV_DIR)])
     if result.returncode != 0 or not vpy.exists():
